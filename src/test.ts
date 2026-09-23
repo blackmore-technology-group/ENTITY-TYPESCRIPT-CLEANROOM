@@ -1,14 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { loadJson, verifyBundle, verifyRecovery, resultHash } from './verifier.js';
-const kit=new URL('../conformance-kit/',import.meta.url).pathname.replace(/^\/(?:[A-Za-z]:)/,m=>m.slice(1));
-const manifest=loadJson(kit+'vectors/VECTOR_MANIFEST.json');
-let pass=0; const results:any[]=[];
-for(const v of manifest.vectors){
-  const r=verifyBundle(loadJson(kit+'vectors/'+v.file));
-  const ok=r.overall_valid===v.expected.overall_valid && JSON.stringify(r.error_codes)===JSON.stringify(v.expected.error_codes);
-  results.push({name:v.name,ok,result_sha256:resultHash(r),...r}); if(ok)pass++;
-}
-const recovery=verifyRecovery(kit+'vectors/recovery',kit+'vectors/test_inputs/recovery_key.hex');
-if(!recovery.overall_valid) throw new Error('recovery failed '+JSON.stringify(recovery));
-if(pass!==manifest.vectors.length) throw new Error('vector failures '+JSON.stringify(results.filter(x=>!x.ok)));
-console.log(JSON.stringify({implementation:'typescript',vectors_passed:pass,vectors_total:manifest.vectors.length,recovery_pass:true,golden_root:manifest.valid_transaction_root_sha256,results,recovery},null,2));
+﻿import {readFileSync,mkdirSync,writeFileSync} from 'node:fs';import {createHash} from 'node:crypto';import {resolve} from 'node:path';
+const repo=resolve(import.meta.dirname,'..'),kit=resolve(repo,'conformance');const load=(n:string)=>JSON.parse(readFileSync(resolve(kit,n),'utf8'));const sha=(s:string)=>createHash('sha256').update(s).digest('hex');
+function canon(x:any){const p=x.primitives,m=x.market,d=x.declared,ev=p.events.map((e:any)=>e.type).join(',');return [x.version,p.entity.id,p.authority.id,p.right.id,m.instrument_id,m.venue_id,m.seller_entity_id,m.buyer_entity_id,m.quantity,m.unit_price_minor,m.originator_bps,m.usage_action,d.gross_minor,d.originator_minor,d.seller_net_minor,ev].join('|')}
+function valid(x:any){if(x.schema!=='entity-v3-polyglot-transaction-v1'||x.version!=='3.0.0')return false;const p=x.primitives,m=x.market,d=x.declared;if(p.authority.principal_entity_id!==m.seller_entity_id||p.right.grantor_entity_id!==m.seller_entity_id||p.right.subject_entity_id!==p.entity.id)return false;if(!Number.isInteger(m.quantity)||m.quantity<=0||!Number.isInteger(m.unit_price_minor)||m.unit_price_minor<0||!Number.isInteger(m.originator_bps)||m.originator_bps<0||m.originator_bps>10000||m.buyer_entity_id===m.seller_entity_id)return false;if(!p.right.actions.includes(m.usage_action))return false;const ex=['REGISTER','DELEGATE','GRANT_RIGHT','LIST','TRADE','SETTLE','ENTITLE','USE','VALUE'];if(p.events.length!==ex.length||p.events.some((e:any,i:number)=>e.type!==ex[i]||e.seq!==i+1))return false;const g=m.quantity*m.unit_price_minor,o=Math.floor(g*m.originator_bps/10000);if(d.gross_minor!==g||d.originator_minor!==o||d.seller_net_minor!==g-o)return false;return sha(canon(x))===x.state_root_sha256}
+const good=load('VALID_TRANSACTION.json'),man=load('CONFORMANCE_MANIFEST.json'),rec=load('RECOVERY_EXPORT.json'),exp=load('EXPECTED_RESULT.json');const rejected=man.invalid_vectors.filter((f:string)=>!valid(load(f))).length;const rr=sha([rec.version,rec.state_root_sha256,rec.controller_entities.join(','),rec.recovery_epoch].join('|'));const result=sha([good.state_root_sha256,rec.recovery_root_sha256,rejected].join('|'));const pass=valid(good)&&rr===rec.recovery_root_sha256&&rec.state_root_sha256===good.state_root_sha256&&rejected===man.invalid_vectors.length&&result===exp.result_sha256;const out={implementation:'typescript',pass,state_root_sha256:good.state_root_sha256,recovery_root_sha256:rec.recovery_root_sha256,invalid_vectors_rejected:rejected,result_sha256:result};mkdirSync(resolve(repo,'qualification'),{recursive:true});writeFileSync(resolve(repo,'qualification/result.json'),JSON.stringify(out,null,2));console.log(JSON.stringify(out,null,2));process.exit(pass?0:2);
