@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 import { readFileSync } from "fs";
-const KIT="passport-conformance-kit/ENTITY_V3_4_GLOBAL_PASSPORT_CLEANROOM_KIT.min.json";
-const KIT_SHA="5869a3fd0ed6cb9f65bf4b20c3bd64933cad82f4aef05c5809e2e05af921f230";
+const KIT="passport-conformance-kit-v341/ENTITY_V3_4_GLOBAL_PASSPORT_CLEANROOM_KIT.min.json";
+const KIT_SHA="f95c2b347da97742fed3f20611f0eec2fd3df48694fed9494fb07163c537cfb7";
 const EXPECTED="ac7504cce70576008cff069607619660a4b9bf0cad43b3f3de81078f1e80d9ba";
 const CORE=["ENTITY","AUTHORITY","RIGHT","EVENT","VALUE"];
 const sha=(b:Buffer|string)=>createHash("sha256").update(b).digest("hex");
