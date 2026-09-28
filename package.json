@@ -1,6 +1,6 @@
 {
   "name": "entity-typescript-cleanroom",
-  "version": "1.0.0",
+  "version": "3.4.2",
   "description": "BTG-controlled ENTITY verifier and clean-room conformance baseline for reproducible protocol testing",
   "license": "Apache-2.0",
   "type": "module",
