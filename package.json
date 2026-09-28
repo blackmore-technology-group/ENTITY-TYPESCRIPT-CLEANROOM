@@ -1,12 +1,37 @@
 {
   "name": "entity-typescript-cleanroom",
   "version": "1.0.0",
-  "private": true,
+  "description": "BTG-controlled ENTITY verifier and clean-room conformance baseline for reproducible protocol testing",
+  "license": "Apache-2.0",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blackmore-technology-group/ENTITY-TYPESCRIPT-CLEANROOM.git"
+  },
+  "homepage": "https://blackmore-technology-group.github.io/ENTITY-DOCS/",
+  "keywords": [
+    "authorization",
+    "provenance",
+    "conformance",
+    "interoperability",
+    "verifiable-claims"
+  ],
+  "bin": {
+    "entity-verify": "dist/cli.js"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && node dist/test.js",
-    "verify": "node dist/cli.js"
+    "verify": "node dist/cli.js",
+    "prepublishOnly": "npm test"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "devDependencies": {
     "@types/node": "latest",
