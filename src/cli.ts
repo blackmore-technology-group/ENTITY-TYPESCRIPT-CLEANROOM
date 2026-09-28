@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { loadJson, verifyBundle, resultHash } from './verifier.js';
 const file=process.argv[2];
 if(!file){console.error('usage: entity-verify <bundle.json>');process.exit(2);}
