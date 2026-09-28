@@ -1,0 +1,40 @@
+name: Publish npm package
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+      - name: Require current npm trusted-publishing client
+        run: npm install --global 'npm@^11.15.0'
+      - name: Verify tag matches package version
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          test "$TAG_VERSION" = "$PACKAGE_VERSION"
+      - name: Install, build and test
+        run: |
+          npm ci
+          npm test
+      - name: Verify publish tarball
+        run: |
+          npm pack --dry-run --json > npm-pack.json
+          node -e "const p=require('./npm-pack.json')[0]; if(!p.files.some(f=>f.path==='dist/cli.js')) throw new Error('dist/cli.js missing from npm package')"
+      - name: Publish with npm trusted publishing
+        run: npm publish
