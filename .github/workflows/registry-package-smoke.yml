@@ -1,0 +1,24 @@
+name: Registry package smoke
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Build, test and inspect npm package
+        run: |
+          npm ci
+          npm test
+          npm pack --dry-run --json > npm-pack.json
+          node -e "const p=require('./npm-pack.json')[0]; if(!p.files.some(f=>f.path==='dist/cli.js')) throw new Error('dist/cli.js missing from npm package'); console.log('npm package smoke: PASS')"
